@@ -51,14 +51,13 @@ class DataLoader:
             reader = csv.DictReader(f, delimiter=';')
             
             for row in reader:
-                # Skip empty rows
                 if not any(row.values()):
                     continue
                 
-                # Strip whitespace from all values
                 cleaned_row = {k: v.strip() if v else '' for k, v in row.items()}
                 
-                # Create field for each column (skip empty column names)
+                record = []
+                
                 for column_name, value in cleaned_row.items():
                     if column_name and column_name.strip() and value:
                         field = Field(
@@ -66,9 +65,16 @@ class DataLoader:
                             value=value,
                             properties=FieldProperties()
                         )
-                        print(f"Loaded field from CSV: key='{field.key}' value='{field.value}'")
-                        self.data.append(field)
+                        record.append(field)
+                
+                if record:  # добавляем только непустые строки
+                    self.data.append(record)
+
         
     def get_unique_keys(self) -> set:
         """Get unique keys from loaded data"""
-        return set(field.key for field in self.data)
+        return {
+            field.key
+            for record in self.data
+            for field in record
+        }

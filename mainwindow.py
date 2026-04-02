@@ -75,15 +75,14 @@ class MainWindow(QMainWindow):
         if color.isValid():
             self.image_painter.font_color = color
             if self.selected_field_key:
-                field = next((f for f in self.data_loader.data if f.key == self.selected_field_key), None)
+                field = self._find_field(self.selected_field_key)
                 if field:
                     field.properties.color = color
-            self.image_painter.update_pixmap(fields=self.data_loader.data)
     
     def _on_position_changed(self):
         """Handle position slider changes"""
         if self.selected_field_key:
-            field = next((f for f in self.data_loader.data if f.key == self.selected_field_key), None)
+            field = self._find_field(self.selected_field_key)
             if field:
                 field.properties.x = self.ui.textPositionXSlider.value()
                 field.properties.y = self.ui.textPositionYSlider.value()
@@ -91,14 +90,14 @@ class MainWindow(QMainWindow):
     
     def _set_font(self):
         if self.selected_field_key:
-            field = next((f for f in self.data_loader.data if f.key == self.selected_field_key), None)
+            field = self._find_field(self.selected_field_key)
             if field:
                 field.properties.font.setFamily(self.ui.fontComboBox.currentFont().family())
         self.image_painter.update_pixmap(fields=self.data_loader.data)
 
     def _change_font_size(self):
         if self.selected_field_key:
-            field = next((f for f in self.data_loader.data if f.key == self.selected_field_key), None)
+            field = self._find_field(self.selected_field_key)
             if field:
                 field.properties.font.setPointSize(self.ui.fontSizeSpinBox.value())
         self.image_painter.update_pixmap(fields=self.data_loader.data)
@@ -157,18 +156,27 @@ class MainWindow(QMainWindow):
         print(f"Selected field: {selected_key}")
         self.selected_field_key = selected_key
         # Load field properties into UI
-        field = next((f for f in self.data_loader.data if f.key == selected_key), None)
+        field = self._find_field(selected_key)
         if field:
             self.ui.fontComboBox.setCurrentFont(field.properties.font)
             self.ui.fontSizeSpinBox.setValue(field.properties.font.pointSize())
+
             self.ui.textPositionXSlider.blockSignals(True)
             self.ui.textPositionXSlider.setValue(int(field.properties.x))
             self.ui.textPositionXSlider.blockSignals(False)
+
             self.ui.textPositionYSlider.blockSignals(True)
             self.ui.textPositionYSlider.setValue(int(field.properties.y))
             self.ui.textPositionYSlider.blockSignals(False)
+
             self.image_painter.font_color = field.properties.color
-    
+
+    def _find_field(self, key: str) -> Field | None:
+        for record in self.data_loader.data:
+            for field in record:
+                if field.key == key:
+                    return field
+        return None
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
