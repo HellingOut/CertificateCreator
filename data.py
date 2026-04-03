@@ -2,11 +2,10 @@
 import json
 import chardet
 
-from models import Field, FieldProperties
+from models import FieldProperties
 
 class DataLoader:
-    
-    data: list[list[Field]] = [[]]
+    data: list[dict[str, str]] = []
     
     def __init__(self) -> None:
         self.data = []
@@ -26,15 +25,10 @@ class DataLoader:
             json_data = json.load(f)
             
             self.data = []
-            for item in json_data:
-                record = []
-                for key, value in item.items():
-                    field = Field(
-                        key=key,
-                        value=value,
-                        properties=FieldProperties()
-                    )
-                    record.append(field)
+            for key, value in json_data.items():
+                record = {}
+                field = {key:value}
+                record.update(field)
                 self.data.append(record)
     
     def _detect_encoding(self, file_path: str) -> str:
@@ -56,16 +50,11 @@ class DataLoader:
                 
                 cleaned_row = {k: v.strip() if v else '' for k, v in row.items()}
                 
-                record = []
-                
+                record = {}
                 for column_name, value in cleaned_row.items():
                     if column_name and column_name.strip() and value:
-                        field = Field(
-                            key=column_name.strip(),
-                            value=value,
-                            properties=FieldProperties()
-                        )
-                        record.append(field)
+                        field = {column_name.strip(): value}
+                        record.update(field)
                 
                 if record:  # добавляем только непустые строки
                     self.data.append(record)
@@ -73,8 +62,10 @@ class DataLoader:
         
     def get_unique_keys(self) -> set:
         """Get unique keys from loaded data"""
-        return {
-            field.key
-            for record in self.data
-            for field in record
-        }
+        return set(self.data[0].keys()) if self.data else set()
+    
+    def get_field_index(self, key: str) -> int:
+        for i, record in enumerate(self.data):
+            if key in record:
+                return i
+        return -1

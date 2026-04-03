@@ -5,16 +5,18 @@ from PySide6.QtGui import QAction, QColor, QPixmap, QFont
 from PySide6.QtWidgets import QColorDialog
 from PySide6.QtCore import QSettings
 from data import DataLoader
+from models import FieldProperties
 
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
 #     pyside2-uic form.ui -o ui_form.py
-from models import Field
 from ui_form import Ui_MainWindow
 from image_painter import ImagePainter
 
 class MainWindow(QMainWindow):
+    selected_field_key: str = ""
+    
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = Ui_MainWindow()
@@ -31,7 +33,7 @@ class MainWindow(QMainWindow):
         # Initialize ImagePainter
         self.data_loader = DataLoader()
         self.image_painter = ImagePainter()
-        self.selected_field_key = None
+        self.selected_field_key = ""
         self._setup_image_painter()
         self._connect_signals()
         self._populate_recent_menu()
@@ -71,35 +73,37 @@ class MainWindow(QMainWindow):
     
     def _on_pick_color(self):
         """Handle color picker button click"""
-        color = QColorDialog.getColor(self.image_painter.font_color, self, "Select Text Color")
+        current_property = self._get_property(self.selected_field_key)
+        color = QColorDialog.getColor(current_property.color, self, "Select Text Color")
         if color.isValid():
-            self.image_painter.font_color = color
+            current_property.color = color
             if self.selected_field_key:
                 field = self._find_field(self.selected_field_key)
                 if field:
-                    field.properties.color = color
+                    current_property.color = color
     
     def _on_position_changed(self):
         """Handle position slider changes"""
+        current_property = self._get_property(self.selected_field_key)
         if self.selected_field_key:
             field = self._find_field(self.selected_field_key)
             if field:
-                field.properties.x = self.ui.textPositionXSlider.value()
-                field.properties.y = self.ui.textPositionYSlider.value()
+                current_property.x = self.ui.textPositionXSlider.value()
+                current_property.y = self.ui.textPositionYSlider.value()
         self.image_painter.update_pixmap(fields=self.data_loader.data)
     
     def _set_font(self):
-        if self.selected_field_key:
-            field = self._find_field(self.selected_field_key)
-            if field:
-                field.properties.font.setFamily(self.ui.fontComboBox.currentFont().family())
+        current_property = self._get_property(self.selected_field_key)
+        current_property.font.setFamily(self.ui.fontComboBox.currentFont().family())
+        
         self.image_painter.update_pixmap(fields=self.data_loader.data)
 
     def _change_font_size(self):
+        current_property = self._get_property(self.selected_field_key)
         if self.selected_field_key:
             field = self._find_field(self.selected_field_key)
             if field:
-                field.properties.font.setPointSize(self.ui.fontSizeSpinBox.value())
+                current_property.font.setPointSize(self.ui.fontSizeSpinBox.value())
         self.image_painter.update_pixmap(fields=self.data_loader.data)
     
     def load_image(self, image_path: str):
@@ -152,30 +156,39 @@ class MainWindow(QMainWindow):
     def _on_field_selected(self, item: QListWidgetItem):
         """Handle field selection from the list widget"""
         selected_key = item.text()
+        self.selected_field_key = selected_key
         print(f"Selected field: {selected_key}")
         self.selected_field_key = selected_key
+        
         # Load field properties into UI
         field = self._find_field(selected_key)
         if field:
-            self.ui.fontComboBox.setCurrentFont(field.properties.font)
-            self.ui.fontSizeSpinBox.setValue(field.properties.font.pointSize())
+            current_property = self._get_property(self.selected_field_key)
+            self.ui.fontComboBox.setCurrentFont(current_property.font)
+            self.ui.fontSizeSpinBox.setValue(current_property.font.pointSize())
 
             self.ui.textPositionXSlider.blockSignals(True)
-            self.ui.textPositionXSlider.setValue(int(field.properties.x))
+            self.ui.textPositionXSlider.setValue(int(current_property.x))
             self.ui.textPositionXSlider.blockSignals(False)
 
             self.ui.textPositionYSlider.blockSignals(True)
-            self.ui.textPositionYSlider.setValue(int(field.properties.y))
+            self.ui.textPositionYSlider.setValue(int(current_property.y))
             self.ui.textPositionYSlider.blockSignals(False)
 
-            self.image_painter.font_color = field.properties.color
+            current_property.color = current_property.color
 
-    def _find_field(self, key: str) -> Field | None:
+    def _find_field(self, key: str) -> dict | None:
+        """Find field in loaded data by key"""
         for record in self.data_loader.data:
-            for field in record:
-                if field.key == key:
-                    return field
+            if key in record:
+                return record
         return None
+
+    def _get_property(self, key: str) -> FieldProperties:
+        if key not in self.image_painter.properties:
+            self.image_painter.properties[key] = FieldProperties()
+        return self.image_painter.properties[key]
+    
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
