@@ -1,8 +1,8 @@
 
 from typing import List
 
-from PySide6.QtGui import QPixmap, QFont, QColor, QPainter
-from PySide6.QtCore import QPoint
+from PySide6.QtGui import QPixmap, QFont, QColor, QPainter, Qt
+from PySide6.QtCore import QPoint, QRect
 from PySide6.QtWidgets import QLabel
 
 from models import FieldProperties
@@ -39,13 +39,8 @@ class ImagePainter:
                 value,
                 position = QPoint(new_x, new_y),
                 text_color = current_property.color,
-                font = current_property.font
-            )
-            self.properties[key] = FieldProperties(
-                x=current_property.x,
-                y=current_property.y,
-                color=current_property.color,
-                font=current_property.font
+                font = current_property.font,
+                alignment_flags=current_property.alignment
             )
         self.update_display()
         
@@ -60,10 +55,11 @@ class ImagePainter:
             position: QPoint,
             text_color: QColor,
             font: QFont,
+            alignment_flags: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
     ) -> QPixmap:
         painter = QPainter(pixmap)
         painter.setFont(font)
         painter.setPen(text_color)
-        painter.drawText(position, text)
+        painter.drawText(QRect(position, pixmap.size()), alignment_flags, text)
         painter.end()
         return pixmap

@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QListWidgetItem
-from PySide6.QtGui import QAction, QColor, QPixmap, QFont
+from PySide6.QtGui import QAction, QColor, QPixmap, QFont, Qt
 from PySide6.QtWidgets import QColorDialog
 from PySide6.QtCore import QSettings
 from data import DataLoader
@@ -44,12 +44,20 @@ class MainWindow(QMainWindow):
     
     def _connect_signals(self):
         """Connect UI signals to ImagePainter slots"""
-        self.ui.fontComboBox.currentFontChanged.connect(self._set_font)
-        self.ui.fontSizeSpinBox.valueChanged.connect(self._change_font_size)
         self.ui.pickColorButton.clicked.connect(self._on_pick_color)
         self.ui.textPositionXSlider.valueChanged.connect(self._on_position_changed)
         self.ui.textPositionYSlider.valueChanged.connect(self._on_position_changed)
         
+        self.ui.fontComboBox.currentFontChanged.connect(self._on_font_format_changed)
+        self.ui.fontSizeSpinBox.valueChanged.connect(self._on_font_format_changed)
+        self.ui.fontBoldCheckBox.stateChanged.connect(self._on_font_format_changed)
+        self.ui.fontItalicCheckBox.stateChanged.connect(self._on_font_format_changed)
+        self.ui.fontUnderlineCheckBox.stateChanged.connect(self._on_font_format_changed)
+        self.ui.fontStrikethroughCheckBox.stateChanged.connect(self._on_font_format_changed)
+        
+        self.ui.justifyTextLeftRadioButton.toggled.connect(self._on_justify_changed)
+        self.ui.justifyTextCenterRadioButton.toggled.connect(self._on_justify_changed)
+        self.ui.justifyTextRightRadioButton.toggled.connect(self._on_justify_changed)
         
         self.ui.certificateOpenAction.triggered.connect(self._on_open_certificate)
         self.ui.loadDataAction.triggered.connect(self._on_load_data)
@@ -59,16 +67,21 @@ class MainWindow(QMainWindow):
     def _populate_recent_menu(self):
         """Populate the recent files menu"""
         self.ui.certificateRecentAction.clear()
+        self.ui.recentDataAction.clear()
         for path in self.recent_files:
-            action = self.ui.certificateRecentAction.addAction(path)
-            action.triggered.connect(lambda checked, p=path: self.load_image(p))
+            if path.endswith(('.png', '.jpg', '.bmp')):
+                action = self.ui.certificateRecentAction.addAction(path)
+                action.triggered.connect(lambda checked, p=path: self.load_image(p))
+            elif path.endswith(('.csv', '.json')):
+                action = self.ui.recentDataAction.addAction(path)
+                action.triggered.connect(lambda checked, p=path: self.load_data(p))
     
     def _add_recent_file(self, file_path):
         """Add a file to recent files list and save"""
         if file_path in self.recent_files:
             self.recent_files.remove(file_path)
         self.recent_files.insert(0, file_path)
-        self.recent_files = self.recent_files[:10]  # limit to 10
+        self.recent_files = self.recent_files[:20]  # limit to 20
         self.settings.setValue("recent_files", self.recent_files)
         self._populate_recent_menu()
     
@@ -94,19 +107,26 @@ class MainWindow(QMainWindow):
                 current_property.y = self.ui.textPositionYSlider.value()
         self.image_painter.update_pixmap(fields=self.data_loader.data)
     
-    def _set_font(self):
+    def _on_font_format_changed(self):
         current_property = self._get_property(self.selected_field_key)
         font = QFont(current_property.font)
         font.setFamily(self.ui.fontComboBox.currentFont().family())
-        current_property.font = font
-        
-        self.image_painter.update_pixmap(fields=self.data_loader.data)
-
-    def _change_font_size(self):
-        current_property = self._get_property(self.selected_field_key)
-        font = QFont(current_property.font)
         font.setPointSize(self.ui.fontSizeSpinBox.value())
+        font.setBold(self.ui.fontBoldCheckBox.isChecked())
+        font.setItalic(self.ui.fontItalicCheckBox.isChecked())
+        font.setUnderline(self.ui.fontUnderlineCheckBox.isChecked())
+        font.setStrikeOut(self.ui.fontStrikethroughCheckBox.isChecked())
         current_property.font = font
+        self.image_painter.update_pixmap(fields=self.data_loader.data)
+    
+    def _on_justify_changed(self):
+        current_property = self._get_property(self.selected_field_key)
+        if self.ui.justifyTextLeftRadioButton.isChecked():
+            current_property.alignment = Qt.AlignmentFlag.AlignLeft
+        elif self.ui.justifyTextCenterRadioButton.isChecked():
+            current_property.alignment = Qt.AlignmentFlag.AlignHCenter
+        elif self.ui.justifyTextRightRadioButton.isChecked():
+            current_property.alignment = Qt.AlignmentFlag.AlignRight
         self.image_painter.update_pixmap(fields=self.data_loader.data)
     
     def load_image(self, image_path: str):
@@ -146,6 +166,18 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"Error loading data: {e}")
     
+    def load_data(self, file_path: str):
+        """Load data and update UI"""
+        try:
+            self.data_loader.load_data(file_path)
+            self.update_data_list()
+            # Update ImagePainter with loaded data
+            self.image_painter.update_pixmap(fields=self.data_loader.data)
+            self.ui.certificatePixmap.setPixmap(self.image_painter.rendered_pixmap)
+            self._add_recent_file(file_path)
+        except Exception as e:
+            print(f"Error loading data: {e}")
+    
     def update_data_list(self):
         """Update the fields list widget with loaded data"""
         self.ui.fieldsListWidget.clear()
@@ -164,21 +196,48 @@ class MainWindow(QMainWindow):
         self.selected_field_key = selected_key
         
         # Load field properties into UI
-        field = self._find_field(selected_key)
-        if field:
-            current_property = self._get_property(self.selected_field_key)
-            self.ui.fontComboBox.setCurrentFont(current_property.font)
-            self.ui.fontSizeSpinBox.setValue(current_property.font.pointSize())
+        current_property = self._get_property(self.selected_field_key)
+        self.ui.fontComboBox.setCurrentFont(current_property.font)
+        self.ui.fontSizeSpinBox.setValue(current_property.font.pointSize())
 
-            self.ui.textPositionXSlider.blockSignals(True)
-            self.ui.textPositionXSlider.setValue(int(current_property.x))
-            self.ui.textPositionXSlider.blockSignals(False)
+        self.ui.textPositionXSlider.blockSignals(True)
+        self.ui.textPositionXSlider.setValue(int(current_property.x))
+        self.ui.textPositionXSlider.blockSignals(False)
 
-            self.ui.textPositionYSlider.blockSignals(True)
-            self.ui.textPositionYSlider.setValue(int(current_property.y))
-            self.ui.textPositionYSlider.blockSignals(False)
-
-            current_property.color = current_property.color
+        self.ui.textPositionYSlider.blockSignals(True)
+        self.ui.textPositionYSlider.setValue(int(current_property.y))
+        self.ui.textPositionYSlider.blockSignals(False)
+        
+        self.ui.fontBoldCheckBox.blockSignals(True)
+        self.ui.fontBoldCheckBox.setChecked(current_property.font.bold())
+        self.ui.fontBoldCheckBox.blockSignals(False)
+        
+        self.ui.fontItalicCheckBox.blockSignals(True)
+        self.ui.fontItalicCheckBox.setChecked(current_property.font.italic())
+        self.ui.fontItalicCheckBox.blockSignals(False)
+        
+        self.ui.fontUnderlineCheckBox.blockSignals(True)
+        self.ui.fontUnderlineCheckBox.setChecked(current_property.font.underline())
+        self.ui.fontUnderlineCheckBox.blockSignals(False)
+        
+        self.ui.fontStrikethroughCheckBox.blockSignals(True)
+        self.ui.fontStrikethroughCheckBox.setChecked(current_property.font.strikeOut())
+        self.ui.fontStrikethroughCheckBox.blockSignals(False)
+        
+        self.ui.justifyTextLeftRadioButton.blockSignals(True)
+        self.ui.justifyTextCenterRadioButton.blockSignals(True)
+        self.ui.justifyTextRightRadioButton.blockSignals(True)
+        
+        if current_property.alignment == Qt.AlignmentFlag.AlignLeft:
+            self.ui.justifyTextLeftRadioButton.setChecked(True)
+        elif current_property.alignment == Qt.AlignmentFlag.AlignHCenter:
+            self.ui.justifyTextCenterRadioButton.setChecked(True)
+        elif current_property.alignment == Qt.AlignmentFlag.AlignRight:
+            self.ui.justifyTextRightRadioButton.setChecked(True)
+        
+        self.ui.justifyTextLeftRadioButton.blockSignals(False)
+        self.ui.justifyTextCenterRadioButton.blockSignals(False)
+        self.ui.justifyTextRightRadioButton.blockSignals(False)
 
     def _find_field(self, key: str) -> dict | None:
         """Find field in loaded data by key"""
