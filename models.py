@@ -54,12 +54,6 @@ class FieldProperties:
         return font
 
 @dataclass
-class Field:
-    key: str
-    value: str
-    properties: FieldProperties
-
-@dataclass
 class Template:
     """Шаблон разметки"""
     name: str = "Новый шаблон"

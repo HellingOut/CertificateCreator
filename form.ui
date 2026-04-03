@@ -36,7 +36,7 @@
        <enum>Qt::TextFormat::PlainText</enum>
       </property>
       <property name="scaledContents">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
       <property name="alignment">
        <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -62,11 +62,15 @@
      <property name="title">
       <string>Использовать шаблон разметки</string>
      </property>
-     <addaction name="templatePlaceholder"/>
     </widget>
     <widget class="QMenu" name="certificateRecentAction">
      <property name="title">
       <string>Недавние сертификаты</string>
+     </property>
+    </widget>
+    <widget class="QMenu" name="recentDataAction">
+     <property name="title">
+      <string>Недавние данные</string>
      </property>
     </widget>
     <addaction name="certificateOpenAction"/>
@@ -74,6 +78,9 @@
     <addaction name="separator"/>
     <addaction name="templateSaveAction"/>
     <addaction name="templateOpenMenu"/>
+    <addaction name="separator"/>
+    <addaction name="loadDataAction"/>
+    <addaction name="recentDataAction"/>
     <addaction name="separator"/>
     <addaction name="certificateExportAction"/>
    </widget>
@@ -93,15 +100,8 @@
     </property>
     <addaction name="aboutAction"/>
    </widget>
-   <widget class="QMenu" name="dataMenu">
-    <property name="title">
-     <string>Данные</string>
-    </property>
-    <addaction name="loadDataAction"/>
-   </widget>
    <addaction name="fileMenu"/>
    <addaction name="editMenu"/>
-   <addaction name="dataMenu"/>
    <addaction name="viewMenu"/>
    <addaction name="helpMenu"/>
   </widget>
@@ -193,6 +193,14 @@
            <height>16777215</height>
           </size>
          </property>
+         <property name="writingSystem">
+          <enum>QFontDatabase::WritingSystem::Cyrillic</enum>
+         </property>
+         <property name="currentFont">
+          <font>
+           <pointsize>14</pointsize>
+          </font>
+         </property>
         </widget>
        </item>
        <item>
@@ -202,6 +210,9 @@
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="minimum">
+          <number>8</number>
          </property>
          <property name="maximum">
           <number>255</number>
@@ -235,7 +246,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox">
+        <widget class="QCheckBox" name="fontItalicCheckBox">
          <property name="font">
           <font>
            <pointsize>12</pointsize>
@@ -251,7 +262,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox_2">
+        <widget class="QCheckBox" name="fontUnderlineCheckBox">
          <property name="font">
           <font>
            <pointsize>12</pointsize>
@@ -267,7 +278,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox_3">
+        <widget class="QCheckBox" name="fontStrikethroughCheckBox">
          <property name="font">
           <font>
            <pointsize>12</pointsize>
@@ -324,7 +335,14 @@
      <item>
       <widget class="QPushButton" name="pickColorButton">
        <property name="text">
-        <string>Выбрать цвет</string>
+        <string>Выбрать цвет заливки</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton">
+       <property name="text">
+        <string>Выбрать цвет обводки</string>
        </property>
       </widget>
      </item>
@@ -336,7 +354,7 @@
       </widget>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="textPositionSpinBoxesHBoxLayout">
+      <layout class="QHBoxLayout" name="textPositionHBoxLayout">
        <item>
         <widget class="QLabel" name="textPositionXLabel">
          <property name="sizePolicy">
@@ -351,12 +369,15 @@
         </widget>
        </item>
        <item>
-        <widget class="QDoubleSpinBox" name="textPositionXDoubleSpinBox">
+        <widget class="QSlider" name="textPositionXSlider">
          <property name="maximum">
-          <double>100.000000000000000</double>
+          <number>100</number>
          </property>
          <property name="singleStep">
-          <double>0.500000000000000</double>
+          <number>0</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
          </property>
         </widget>
        </item>
@@ -370,33 +391,6 @@
          </property>
          <property name="text">
           <string>y:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QDoubleSpinBox" name="textPositionYDoubleSpinBox">
-         <property name="maximum">
-          <double>100.000000000000000</double>
-         </property>
-         <property name="singleStep">
-          <double>0.500000000000000</double>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="testPositionSlidersHBoxLayout">
-       <item>
-        <widget class="QSlider" name="textPositionXSlider">
-         <property name="maximum">
-          <number>100</number>
-         </property>
-         <property name="singleStep">
-          <number>0</number>
-         </property>
-         <property name="orientation">
-          <enum>Qt::Orientation::Horizontal</enum>
          </property>
         </widget>
        </item>
@@ -559,11 +553,6 @@
     <string>Загрузить данные</string>
    </property>
   </action>
-  <action name="templatePlaceholder">
-   <property name="text">
-    <string>example.json</string>
-   </property>
-  </action>
   <action name="templateSaveAction">
    <property name="text">
     <string>Сохранить шаблон разметки</string>
@@ -571,7 +560,17 @@
   </action>
   <action name="action">
    <property name="text">
-    <string> </string>
+    <string/>
+   </property>
+  </action>
+  <action name="action12">
+   <property name="text">
+    <string>12</string>
+   </property>
+  </action>
+  <action name="action11">
+   <property name="text">
+    <string>11</string>
    </property>
   </action>
  </widget>

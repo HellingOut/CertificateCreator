@@ -50,6 +50,7 @@ class MainWindow(QMainWindow):
         self.ui.textPositionXSlider.valueChanged.connect(self._on_position_changed)
         self.ui.textPositionYSlider.valueChanged.connect(self._on_position_changed)
         
+        
         self.ui.certificateOpenAction.triggered.connect(self._on_open_certificate)
         self.ui.loadDataAction.triggered.connect(self._on_load_data)
         
@@ -81,6 +82,7 @@ class MainWindow(QMainWindow):
                 field = self._find_field(self.selected_field_key)
                 if field:
                     current_property.color = color
+            self.image_painter.update_pixmap(fields=self.data_loader.data)
     
     def _on_position_changed(self):
         """Handle position slider changes"""
@@ -94,16 +96,17 @@ class MainWindow(QMainWindow):
     
     def _set_font(self):
         current_property = self._get_property(self.selected_field_key)
-        current_property.font.setFamily(self.ui.fontComboBox.currentFont().family())
+        font = QFont(current_property.font)
+        font.setFamily(self.ui.fontComboBox.currentFont().family())
+        current_property.font = font
         
         self.image_painter.update_pixmap(fields=self.data_loader.data)
 
     def _change_font_size(self):
         current_property = self._get_property(self.selected_field_key)
-        if self.selected_field_key:
-            field = self._find_field(self.selected_field_key)
-            if field:
-                current_property.font.setPointSize(self.ui.fontSizeSpinBox.value())
+        font = QFont(current_property.font)
+        font.setPointSize(self.ui.fontSizeSpinBox.value())
+        current_property.font = font
         self.image_painter.update_pixmap(fields=self.data_loader.data)
     
     def load_image(self, image_path: str):
