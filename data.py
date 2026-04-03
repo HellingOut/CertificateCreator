@@ -6,7 +6,7 @@ from models import Field, FieldProperties
 
 class DataLoader:
     
-    data: list[list[Field]]
+    data: list[list[Field]] = [[]]
     
     def __init__(self) -> None:
         self.data = []

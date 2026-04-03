@@ -136,7 +136,6 @@ class MainWindow(QMainWindow):
                 self.image_painter.update_pixmap(fields=self.data_loader.data)
                 self.ui.certificatePixmap.setPixmap(self.image_painter.rendered_pixmap)
                 self._add_recent_file(file_path)
-                
             except Exception as e:
                 print(f"Error loading data: {e}")
     

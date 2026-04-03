@@ -3,7 +3,7 @@ from typing import List
 
 from PySide6.QtGui import QPixmap, QFont, QColor, QPainter
 from PySide6.QtCore import QPoint
-from PySide6.QtWidgets import QLabel, QPushButton, QFontComboBox, QSpinBox, QSlider
+from PySide6.QtWidgets import QLabel
 
 from models import Field
 
@@ -19,13 +19,15 @@ class ImagePainter:
     def __init__(self):
         self.font_color = QColor(0, 0, 0)
 
-    def update_pixmap(self, fields: List[Field] = []):
-        if self.original_pixmap is None or self.original_pixmap.isNull():
+    def update_pixmap(self, fields: list[list[Field]] = [], field_index: int = 0):
+        if self.original_pixmap:
+            self.rendered_pixmap = self.original_pixmap.copy()
+        if self.original_pixmap is None or self.original_pixmap.isNull() or not fields or field_index >= len(fields):
             return
         
         self.rendered_pixmap = self.original_pixmap.copy()
         
-        for field in fields:
+        for field in fields[field_index]:
             if field.value.strip():
                 # Process each field and add text to pixmap
                 new_x = int((field.properties.x / 100.0) * self.rendered_pixmap.width())
