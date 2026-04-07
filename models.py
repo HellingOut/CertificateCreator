@@ -7,8 +7,8 @@ from PySide6.QtCore import Qt
 @dataclass
 class FieldProperties:
     """Свойства поля сертификата"""
-    x: float = 0.0
-    y: float = 0.0
+    x: float = 50
+    y: float = 50
     font: QFont = QFont()
     font_bold: bool = False
     font_italic: bool = False

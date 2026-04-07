@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QListWidgetItem
-from PySide6.QtGui import QAction, QColor, QPixmap, QFont, Qt
+from PySide6.QtGui import QPixmap, QFont, Qt
 from PySide6.QtWidgets import QColorDialog
 from PySide6.QtCore import QSettings
 from data import DataLoader
@@ -16,6 +16,7 @@ from image_painter import ImagePainter
 
 class MainWindow(QMainWindow):
     selected_field_key: str = ""
+    current_data_number: int = 0
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -63,6 +64,30 @@ class MainWindow(QMainWindow):
         self.ui.loadDataAction.triggered.connect(self._on_load_data)
         
         self.ui.fieldsListWidget.itemClicked.connect(self._on_field_selected)
+        
+        self.ui.certificatePreviewSpinBox.valueChanged.connect(self._on_preview_number_changed)
+        
+        self.ui.certificateExportAction.triggered.connect(self._on_export_certificate)
+        
+    def _on_export_certificate(self):
+        """Handle export certificate action"""
+        if not self.image_painter.rendered_pixmap or self.image_painter.rendered_pixmap.isNull():
+            print("No certificate to export")
+            return
+        
+        file_path = QFileDialog.getExistingDirectory(self, "Select Export Directory")
+        if file_path:
+            for i in range(len(self.data_loader.data)):
+                self.image_painter.update_pixmap(fields=self.data_loader.data, field_index=i)
+                export_path = f"{file_path}/certificate_{i + 1}.png"
+                self.image_painter.rendered_pixmap.save(export_path)
+                print(f"Exported certificate to: {export_path}")
+    
+    def _on_preview_number_changed(self, value):
+        """Handle preview number changes"""
+        self.current_data_number = value
+        self.image_painter.update_pixmap(fields=self.data_loader.data, field_index=value)
+        self.ui.certificatePixmap.setPixmap(self.image_painter.rendered_pixmap)
     
     def _populate_recent_menu(self):
         """Populate the recent files menu"""
@@ -159,6 +184,7 @@ class MainWindow(QMainWindow):
             try:
                 self.data_loader.load_data(file_path)
                 self.update_data_list()
+                self.update_preview_spinbox()
                 # Update ImagePainter with loaded data
                 self.image_painter.update_pixmap(fields=self.data_loader.data)
                 self.ui.certificatePixmap.setPixmap(self.image_painter.rendered_pixmap)
@@ -166,11 +192,22 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"Error loading data: {e}")
     
+    def update_preview_spinbox(self):
+        """Update preview spinbox value after loading new data"""
+        print(f"Updating preview spinbox: data length = {len(self.data_loader.data)}")
+        self.ui.certificatePreviewSpinBox.blockSignals(True)
+        self.ui.certificatePreviewSpinBox.setMaximum(len(self.data_loader.data) - 1)
+        self.ui.certificatePreviewSpinBox.setValue(0)
+        self.ui.certificatePreviewSpinBox.blockSignals(False)
+        
+        self.ui.certificateCountLabel.setText(f"/ {len(self.data_loader.data)}")
+    
     def load_data(self, file_path: str):
         """Load data and update UI"""
         try:
             self.data_loader.load_data(file_path)
             self.update_data_list()
+            self.update_preview_spinbox()
             # Update ImagePainter with loaded data
             self.image_painter.update_pixmap(fields=self.data_loader.data)
             self.ui.certificatePixmap.setPixmap(self.image_painter.rendered_pixmap)
@@ -190,16 +227,19 @@ class MainWindow(QMainWindow):
     
     def _on_field_selected(self, item: QListWidgetItem):
         """Handle field selection from the list widget"""
-        selected_key = item.text()
-        self.selected_field_key = selected_key
-        print(f"Selected field: {selected_key}")
-        self.selected_field_key = selected_key
+        self.selected_field_key = item.text()
         
         # Load field properties into UI
         current_property = self._get_property(self.selected_field_key)
+        
+        self.ui.fontComboBox.blockSignals(True)
         self.ui.fontComboBox.setCurrentFont(current_property.font)
+        self.ui.fontComboBox.blockSignals(False)
+        
+        self.ui.fontSizeSpinBox.blockSignals(True)
         self.ui.fontSizeSpinBox.setValue(current_property.font.pointSize())
-
+        self.ui.fontSizeSpinBox.blockSignals(False)
+        
         self.ui.textPositionXSlider.blockSignals(True)
         self.ui.textPositionXSlider.setValue(int(current_property.x))
         self.ui.textPositionXSlider.blockSignals(False)
@@ -228,12 +268,13 @@ class MainWindow(QMainWindow):
         self.ui.justifyTextCenterRadioButton.blockSignals(True)
         self.ui.justifyTextRightRadioButton.blockSignals(True)
         
-        if current_property.alignment == Qt.AlignmentFlag.AlignLeft:
-            self.ui.justifyTextLeftRadioButton.setChecked(True)
-        elif current_property.alignment == Qt.AlignmentFlag.AlignHCenter:
-            self.ui.justifyTextCenterRadioButton.setChecked(True)
-        elif current_property.alignment == Qt.AlignmentFlag.AlignRight:
-            self.ui.justifyTextRightRadioButton.setChecked(True)
+        match current_property.alignment:
+            case Qt.AlignmentFlag.AlignLeft:
+                self.ui.justifyTextLeftRadioButton.setChecked(True)
+            case Qt.AlignmentFlag.AlignHCenter:
+                self.ui.justifyTextCenterRadioButton.setChecked(True)
+            case Qt.AlignmentFlag.AlignRight:
+                self.ui.justifyTextRightRadioButton.setChecked(True)
         
         self.ui.justifyTextLeftRadioButton.blockSignals(False)
         self.ui.justifyTextCenterRadioButton.blockSignals(False)

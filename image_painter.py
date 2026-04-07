@@ -1,6 +1,3 @@
-
-from typing import List
-
 from PySide6.QtGui import QPixmap, QFont, QColor, QPainter, Qt
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtWidgets import QLabel
@@ -60,6 +57,19 @@ class ImagePainter:
         painter = QPainter(pixmap)
         painter.setFont(font)
         painter.setPen(text_color)
-        painter.drawText(QRect(position, pixmap.size()), alignment_flags, text)
+
+        metrics = painter.fontMetrics()
+        rect = metrics.boundingRect(text)
+
+        x = position.x()
+        y = position.y()
+
+        if alignment_flags & Qt.AlignmentFlag.AlignHCenter:
+            x -= rect.width() // 2
+        elif alignment_flags & Qt.AlignmentFlag.AlignRight:
+            x -= rect.width()
+
+        painter.drawText(QPoint(x, y), text)
+        
         painter.end()
         return pixmap
