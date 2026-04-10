@@ -53,15 +53,15 @@ class ImagePainter:
             text_color: QColor,
             font: QFont,
             alignment_flags: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop,
-            outline_color: QColor | None = None
+            outline_color: QColor | None = QColor(50, 50, 50)
     ) -> QPixmap:
         painter = QPainter(pixmap)
         painter.setFont(font)
         painter.setBrush(text_color)
-        if outline_color:
-            painter.setPen(outline_color)
-        else:
-            painter.setPen(text_color)
+        # if outline_color:
+        painter.setPen(outline_color)
+        # else:
+            # painter.setPen(text_color)
         
         metrics = painter.fontMetrics()
         rect = metrics.boundingRect(text)
