@@ -1,11 +1,13 @@
 # This Python file uses the following encoding: utf-8
-import sys
+import sys, os
+from datetime import date
+from typing import Callable
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QListWidgetItem
 from PySide6.QtGui import QPixmap, QFont, Qt
 from PySide6.QtWidgets import QColorDialog
-from PySide6.QtCore import QSettings
+from PySide6.QtCore import QSettings, SignalInstance
 from data import DataLoader
-from models import FieldProperties
+from models import FieldProperties, Template
 
 # Important:
 # You need to run the following command to generate the ui_form.py file
@@ -38,6 +40,7 @@ class MainWindow(QMainWindow):
         self._setup_image_painter()
         self._connect_signals()
         self._populate_recent_menu()
+        self._populate_templates_menu()
     
     def _setup_image_painter(self):
         """Setup ImagePainter with UI elements"""
@@ -45,30 +48,42 @@ class MainWindow(QMainWindow):
     
     def _connect_signals(self):
         """Connect UI signals to ImagePainter slots"""
-        self.ui.pickColorButton.clicked.connect(self._on_pick_color)
-        self.ui.textPositionXSlider.valueChanged.connect(self._on_position_changed)
-        self.ui.textPositionYSlider.valueChanged.connect(self._on_position_changed)
+        bindings: dict[SignalInstance, Callable] = {
+            self.ui.pickColorButton.clicked: self._on_pick_color,
+            self.ui.textPositionXSlider.valueChanged: self._on_position_changed,
+            self.ui.textPositionYSlider.valueChanged: self._on_position_changed,
+            
+            self.ui.fontComboBox.currentFontChanged: self._on_font_format_changed,
+            self.ui.fontSizeSpinBox.valueChanged: self._on_font_format_changed,
+            self.ui.fontBoldCheckBox.stateChanged: self._on_font_format_changed,
+            self.ui.fontItalicCheckBox.stateChanged: self._on_font_format_changed,
+            self.ui.fontUnderlineCheckBox.stateChanged: self._on_font_format_changed,
+            self.ui.fontStrikethroughCheckBox.stateChanged: self._on_font_format_changed,
+            
+            self.ui.justifyTextLeftRadioButton.toggled: self._on_justify_changed,
+            self.ui.justifyTextCenterRadioButton.toggled: self._on_justify_changed,
+            self.ui.justifyTextRightRadioButton.toggled: self._on_justify_changed,
+            
+            self.ui.certificateOpenAction.triggered: self._on_open_certificate,
+            self.ui.loadDataAction.triggered: self._on_load_data,
+            
+            self.ui.fieldsListWidget.itemClicked: self._on_field_selected,
+            
+            self.ui.certificatePreviewSpinBox.valueChanged: self._on_preview_number_changed,
+            
+            self.ui.certificateExportAction.triggered: self._on_export_certificate,
+            self.ui.templateSaveAction.triggered: self._on_save_template
+        }
         
-        self.ui.fontComboBox.currentFontChanged.connect(self._on_font_format_changed)
-        self.ui.fontSizeSpinBox.valueChanged.connect(self._on_font_format_changed)
-        self.ui.fontBoldCheckBox.stateChanged.connect(self._on_font_format_changed)
-        self.ui.fontItalicCheckBox.stateChanged.connect(self._on_font_format_changed)
-        self.ui.fontUnderlineCheckBox.stateChanged.connect(self._on_font_format_changed)
-        self.ui.fontStrikethroughCheckBox.stateChanged.connect(self._on_font_format_changed)
+        for signal, slot in bindings.items():
+            signal.connect(slot)
         
-        self.ui.justifyTextLeftRadioButton.toggled.connect(self._on_justify_changed)
-        self.ui.justifyTextCenterRadioButton.toggled.connect(self._on_justify_changed)
-        self.ui.justifyTextRightRadioButton.toggled.connect(self._on_justify_changed)
-        
-        self.ui.certificateOpenAction.triggered.connect(self._on_open_certificate)
-        self.ui.loadDataAction.triggered.connect(self._on_load_data)
-        
-        self.ui.fieldsListWidget.itemClicked.connect(self._on_field_selected)
-        
-        self.ui.certificatePreviewSpinBox.valueChanged.connect(self._on_preview_number_changed)
-        
-        self.ui.certificateExportAction.triggered.connect(self._on_export_certificate)
-        
+    def _on_save_template(self):
+        file_path = os.getcwd() + "/templates/" + date.today().isoformat() + ".json"
+        template = Template(fields=self.image_painter.properties)
+        template.save(file_path)
+        self._populate_templates_menu()
+
     def _on_export_certificate(self):
         """Handle export certificate action"""
         if not self.image_painter.rendered_pixmap or self.image_painter.rendered_pixmap.isNull():
@@ -109,6 +124,28 @@ class MainWindow(QMainWindow):
         self.recent_files = self.recent_files[:20]  # limit to 20
         self.settings.setValue("recent_files", self.recent_files)
         self._populate_recent_menu()
+    
+    def _populate_templates_menu(self):
+        self.ui.templateOpenMenu.clear()
+        for path in os.listdir(os.getcwd() + "/templates"):
+            if path.endswith(('.json')):
+                action = self.ui.templateOpenMenu.addAction(path)
+                action.triggered.connect(
+                    lambda checked,
+                    p=os.getcwd() + "/templates/" + path: self.load_template(p)
+                )
+    
+    def load_template(self, template_path: str):
+        """Load template and update UI"""
+        try:
+            template = Template.load(template_path)
+            self.image_painter.properties = template.fields
+            if self.data_loader.data and self.image_painter.original_pixmap:
+                self.image_painter.update_pixmap(fields=self.data_loader.data, field_index=self.current_data_number)
+                self.ui.certificatePixmap.setPixmap(self.image_painter.rendered_pixmap)
+        except Exception as e:
+            print(f"Error loading template: {e}")
+            return
     
     def _on_pick_color(self):
         """Handle color picker button click"""

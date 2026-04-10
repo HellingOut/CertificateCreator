@@ -1,0 +1,41 @@
+{
+  "name": "Новый шаблон",
+  "fields": {
+    "Категория": {
+      "x": 48,
+      "y": 51,
+      "font_family": "AcademyC",
+      "font_size": 14,
+      "font_bold": false,
+      "font_italic": false,
+      "font_underline": false,
+      "font_strikeout": false,
+      "alignment": 4,
+      "color": 4278190080
+    },
+    "ФИО": {
+      "x": 48,
+      "y": 44,
+      "font_family": "Arial",
+      "font_size": 16,
+      "font_bold": true,
+      "font_italic": true,
+      "font_underline": true,
+      "font_strikeout": false,
+      "alignment": 4,
+      "color": 4280478242
+    },
+    "Руководитель": {
+      "x": 0,
+      "y": 81,
+      "font_family": "AcademyC",
+      "font_size": 16,
+      "font_bold": false,
+      "font_italic": false,
+      "font_underline": false,
+      "font_strikeout": false,
+      "alignment": 1,
+      "color": 4278190080
+    }
+  }
+}

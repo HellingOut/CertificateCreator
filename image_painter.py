@@ -1,4 +1,4 @@
-from PySide6.QtGui import QPixmap, QFont, QColor, QPainter, Qt
+from PySide6.QtGui import QPainterPath, QPixmap, QFont, QColor, QPainter, Qt
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtWidgets import QLabel
 
@@ -52,12 +52,17 @@ class ImagePainter:
             position: QPoint,
             text_color: QColor,
             font: QFont,
-            alignment_flags: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
+            alignment_flags: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop,
+            outline_color: QColor | None = None
     ) -> QPixmap:
         painter = QPainter(pixmap)
         painter.setFont(font)
-        painter.setPen(text_color)
-
+        painter.setBrush(text_color)
+        if outline_color:
+            painter.setPen(outline_color)
+        else:
+            painter.setPen(text_color)
+        
         metrics = painter.fontMetrics()
         rect = metrics.boundingRect(text)
 

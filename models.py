@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from PySide6.QtGui import QFont, QColor
 from PySide6.QtCore import Qt 
 
@@ -16,18 +16,32 @@ class FieldProperties:
     font_strikeout: bool = False
     alignment: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignHCenter
     color: QColor = field(default_factory=lambda: QColor(0, 0, 0))
-    
+    def __init__(self) -> None:
+        self.x = 50
+        self.y = 50
+        self.font = QFont()
+        self.font.setFamily("Arial")
+        self.font.setPointSize(14)
+        self.font_bold = False
+        self.font_italic = False
+        self.font_underline = False
+        self.font_strikeout = False
+        self.alignment = Qt.AlignmentFlag.AlignHCenter
+        self.color = QColor(0, 0, 0)
+        self.outline_color = self.color
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             'x': self.x, 'y': self.y,
             'font_family': self.font.family(),
             'font_size': self.font.pointSize(),
-            'font_bold': self.font_bold,
-            'font_italic': self.font_italic,
-            'font_underline': self.font_underline,
-            'font_strikeout': self.font_strikeout,
+            'font_bold': self.font.bold(),
+            'font_italic': self.font.italic(),
+            'font_underline': self.font.underline(),
+            'font_strikeout': self.font.strikeOut(),
             'alignment': self.alignment,
-            'color': self.color.rgb() if self.color else 0
+            'color': self.color.rgb() if self.color else 0,
+            'outline_color': self.outline_color.rgb() if self.outline_color else 0
         }
     
     @classmethod
@@ -37,12 +51,14 @@ class FieldProperties:
         props.y = data.get('y', 0.0)
         props.font.setFamily(data.get('font_family', 'Arial'))
         props.font.setPointSize(data.get('font_size', 14))
-        props.font_bold = data.get('font_bold', False)
-        props.font_italic = data.get('font_italic', False)
-        props.font_underline = data.get('font_underline', False)
-        props.font_strikeout = data.get('font_strikeout', False)
+        props.font.setBold(data.get('font_bold', False))
+        props.font.setItalic(data.get('font_italic', False))
+        props.font.setUnderline(data.get('font_underline', False))
+        props.font.setStrikeOut(data.get('font_strikeout', False))
         props.alignment = data.get('alignment', Qt.AlignmentFlag.AlignHCenter)
         props.color = QColor(data.get('color', 0))
+        if data.get('outline_color', 0):
+            props.outline_color = QColor(data.get('outline_color', 0))
         return props
     
     def get_qfont(self) -> QFont:
@@ -58,12 +74,10 @@ class Template:
     """Шаблон разметки"""
     name: str = "Новый шаблон"
     fields: Dict[str, FieldProperties] = field(default_factory=dict)
-    image_path: Optional[str] = None
     
     def save(self, filepath: str):
         data = {
             'name': self.name,
-            'image_path': self.image_path,
             'fields': {name: props.to_dict() for name, props in self.fields.items()}
         }
         with open(filepath, 'w', encoding='utf-8') as f:
@@ -76,7 +90,6 @@ class Template:
         
         template = cls(
             name=data.get('name', 'Шаблон'),
-            image_path=data.get('image_path')
         )
         
         for field_name, props_data in data.get('fields', {}).items():
