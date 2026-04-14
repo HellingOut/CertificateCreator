@@ -57,9 +57,9 @@ class ImagePainter:
     ) -> QPixmap:
         painter = QPainter(pixmap)
         painter.setFont(font)
-        painter.setBrush(text_color)
+        painter.setPen(text_color)
         # if outline_color:
-        painter.setPen(outline_color)
+        # painter.setPen(outline_color)
         # else:
             # painter.setPen(text_color)
         

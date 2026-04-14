@@ -1,2 +1,4 @@
 .qtcreator/
 __pycache__/
+build/
+dist/

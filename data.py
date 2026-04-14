@@ -2,8 +2,6 @@
 import json
 import chardet
 
-from models import FieldProperties
-
 class DataLoader:
     data: list[dict[str, str]] = []
     
