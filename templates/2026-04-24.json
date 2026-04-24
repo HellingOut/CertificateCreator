@@ -1,0 +1,18 @@
+{
+  "name": "Новый шаблон",
+  "fields": {
+    "ФИО": {
+      "x": 50,
+      "y": 46,
+      "font_family": "Times New Roman",
+      "font_size": 30,
+      "font_bold": false,
+      "font_italic": false,
+      "font_underline": false,
+      "font_strikeout": false,
+      "alignment": 4,
+      "color": 4278190080,
+      "outline_color": 4278190080
+    }
+  }
+}

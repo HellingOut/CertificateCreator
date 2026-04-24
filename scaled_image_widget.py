@@ -1,8 +1,7 @@
 import sys
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QSizePolicy, QApplication
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QSizePolicy
 from PySide6.QtGui import QPixmap, QPainter
 from PySide6.QtCore import Qt
-
 
 class ScaledImageWidget(QWidget):
     def __init__(self, parent=None):
@@ -34,33 +33,3 @@ class ScaledImageWidget(QWidget):
         
         # drawPixmap с указанием w и h автоматически масштабирует исходник
         painter.drawPixmap(x, y, scaled_size.width(), scaled_size.height(), self._pixmap)
-
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Пропорциональное масштабирование QPixmap")
-        self.resize(500, 400)
-
-        central = QWidget()
-        self.setCentralWidget(central)
-        layout = QVBoxLayout(central)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        self.image_widget = ScaledImageWidget()
-        layout.addWidget(self.image_widget)
-
-        # Пример загрузки (замените на свой путь)
-        # self.image_widget.setPixmap(QPixmap("image.png"))
-        
-        # Для теста создадим пиксмапу программно
-        pm = QPixmap(1200, 800)
-        pm.fill(Qt.GlobalColor.darkGray)
-        self.image_widget.setPixmap(pm)
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    win = MainWindow()
-    win.show()
-    sys.exit(app.exec())

@@ -2,9 +2,9 @@
 import sys, os
 from datetime import date
 from typing import Callable
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QListWidgetItem
+from PySide6.QtWidgets import (QApplication, QMainWindow, QFileDialog, QListWidgetItem, 
+                              QColorDialog, QDialog, QVBoxLayout, QLabel, QComboBox, QPushButton)
 from PySide6.QtGui import QPixmap, QFont, Qt
-from PySide6.QtWidgets import QColorDialog
 from PySide6.QtCore import QSettings, SignalInstance
 from data import DataLoader
 from models import FieldProperties, Template
@@ -84,17 +84,82 @@ class MainWindow(QMainWindow):
         template.save(file_path)
         self._populate_templates_menu()
 
+    def _show_field_selection_dialog(self, fields: list[str]) -> str | None:
+        """Show dialog to select which field to use in export filename
+        
+        Args:
+            fields: List of available field names
+            
+        Returns:
+            Selected field name or None if cancelled
+        """
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Выберите поле для имени файла")
+        dialog.setGeometry(100, 100, 400, 150)
+        
+        layout = QVBoxLayout()
+        
+        label = QLabel("Выберите столбец таблицы для добавления в имя файла:")
+        layout.addWidget(label)
+        
+        combo_box = QComboBox()
+        combo_box.addItems(fields)
+        layout.addWidget(combo_box)
+        
+        button_layout = QVBoxLayout()
+        ok_button = QPushButton("OK")
+        cancel_button = QPushButton("Отмена")
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+        
+        dialog.setLayout(layout)
+        
+        selected = None
+        
+        def on_ok():
+            nonlocal selected
+            selected = combo_box.currentText()
+            dialog.accept()
+        
+        ok_button.clicked.connect(on_ok)
+        cancel_button.clicked.connect(dialog.reject)
+        
+        dialog.exec()
+        return selected
+
     def _on_export_certificate(self):
         """Handle export certificate action"""
         if not self.image_painter.rendered_pixmap or self.image_painter.rendered_pixmap.isNull():
             print("No certificate to export")
             return
         
+        # Check if data is loaded
+        if not self.data_loader.data:
+            print("No data loaded")
+            return
+        
+        # Show dialog to select field for filename
+        unique_keys = self.data_loader.get_unique_keys()
+        if not unique_keys:
+            print("No fields available")
+            return
+        
+        selected_field = self._show_field_selection_dialog(list(unique_keys))
+        if selected_field is None:
+            return  # User cancelled
+        
         file_path = QFileDialog.getExistingDirectory(self, "Select Export Directory")
         if file_path:
             for i in range(len(self.data_loader.data)):
                 self.image_painter.update_pixmap(fields=self.data_loader.data, field_index=i)
-                export_path = f"{file_path}/certificate_{i + 1}.png"
+                
+                # Get the value from selected field for current record
+                field_value = self.data_loader.data[i].get(selected_field, f"record_{i+1}")
+                # Sanitize filename to remove invalid characters
+                safe_field_value = "".join(c for c in str(field_value) if c.isalnum() or c in (' ', '-', '_')).strip()
+                
+                export_path = f"{file_path}/certificate_{safe_field_value}_{i + 1}.png"
                 self.image_painter.rendered_pixmap.save(export_path)
                 print(f"Exported certificate to: {export_path}")
     
