@@ -1,6 +1,6 @@
 from PySide6.QtGui import QPainterPath, QPixmap, QFont, QColor, QPainter, Qt
 from PySide6.QtCore import QPoint, QRect
-from PySide6.QtWidgets import QLabel
+from scaled_image_widget import ScaledImageWidget
 
 from models import FieldProperties
 
@@ -11,7 +11,7 @@ class ImagePainter:
     rendered_pixmap: QPixmap
     
     # UI Elements
-    preview_label: QLabel
+    preview_label: ScaledImageWidget
     
     def __init__(self):
         self.properties = {}
@@ -61,7 +61,7 @@ class ImagePainter:
         # if outline_color:
         # painter.setPen(outline_color)
         # else:
-            # painter.setPen(text_color)
+        #     painter.setPen(text_color)
         
         metrics = painter.fontMetrics()
         rect = metrics.boundingRect(text)
